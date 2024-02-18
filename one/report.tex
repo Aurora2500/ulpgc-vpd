@@ -1,0 +1,63 @@
+\documentclass{article}
+\usepackage{csquotes}
+\usepackage[spanish]{babel}
+\usepackage{authblk}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\usepackage[
+	backend=biber,
+	style=numeric,
+]{biblatex}
+
+\usepackage{enumitem}
+\usepackage{extarrows}
+\usepackage{mathtools}
+\usepackage{systeme}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{multirow}
+\usepackage{minted}
+
+\graphicspath{ {./img/} }
+
+\addbibresource{./sources.bib}
+
+\newcommand{\cimg}[2]{
+\begin{figure}[H]
+	\center
+		\includegraphics[width=#2\linewidth]{#1}
+\end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	{\huge\bfseries Practica 1\par}
+	\vspace{1cm}
+	{\scshape\Large Aurora Zuoris \par\tt{aurora.zuoris101@alu.ulpgc.es}\par}
+	\vspace{3cm}
+	{\scshape\large Virtualización y Processamiento Distribuido\par}
+	\vspace{1cm}
+	{\scshape\large Grado en Ciencias e Ingeniería de Datos\par}
+	\vspace{1cm}
+	{\scshape\large Escuela de Ingeniería Informática\par}
+	\vspace{1cm}
+	{\scshape\large Universidad de Las Palmas de Gran Canaria\par}
+	\vspace{1cm}
+	{\scshape\large \today{} \par}
+\end{titlepage}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+
+\printbibliography
+
+\end{document}
