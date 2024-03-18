@@ -20,9 +20,9 @@
 \usepackage{multirow}
 \usepackage{minted}
 
-\graphicspath{ {./img/} }
+%\graphicspath{ {./img/} }
 
-\addbibresource{./sources.bib}
+%\addbibresource{./sources.bib}
 
 \newcommand{\cimg}[2]{
 \begin{figure}[H]
@@ -52,12 +52,149 @@
 
 \newpage
 
-
 \tableofcontents
 
 \newpage
 
+\section{Introducción}
 
-\printbibliography
+En este informe se describe como se configura una máquina Fedora para
+la virtualización con KVM.
+Se inicia con una instalación limpia de Fedora,
+y se configura para que tenga SELinux, un entorno gráfico
+con cual trabajar antes de configurar KVM y
+varias otras heramientas de virtualización,
+terminando con la creación de una máquina virtual
+cargada a travez de la red mediante NFS.
+
+\section{Desarollo}
+
+Lo primero que se hace es actualizar la contraseña de root de la de por defecto,
+esto se realiza mediante el comando \texttt{passwd}:
+
+\vspace{0.2cm}
+\texttt{\$ passwd}
+\vspace{0.2cm}
+
+Una vez cambiado, se sigue a configurar SELinux a modo ``enforcing''
+Esto se realiza editando el archivo \texttt{/etc/selinux/config} tal que tenga
+la línea \texttt{SELINUX=enforcing}
+y con el comando \texttt{grubby}. Al final se debe reiniciar el sistema para que
+SELinux se active.
+
+\vspace{0.2cm}
+
+\texttt{
+\$ vi /etc/selinux/config
+}
+
+\texttt{
+\$ grubby --update-kernel ALL --args selinux=1
+}
+
+\vspace{0.2cm}
+
+A continuación, se instala un entorno gráfico mediante \texttt{dnf},
+en este caso se usa Gnome. Despues de instalarlo se activa mediante \texttt{systemctl}:
+
+
+\vspace{0.2cm}
+
+\texttt{
+\$ dnf groupinstall gnome
+}
+
+\texttt{
+\$ systemctl set-default graphical.target
+}
+
+\vspace{0.2cm}
+
+Luego, se instala todos los paquetes necesarios para virtualización:
+
+\vspace{0.2cm}
+
+\texttt{
+\$ dnf install libvirt-daemon-kvm qemu-kvm virt-manager \\ virt-viewer guestfs-tools python3-libguestfs virt-top
+}
+
+\vspace{0.2cm}
+
+Para terminar la instalación de estas,
+se activa los módulos de kernel de virtualización con \texttt{modprobe}:
+
+
+\vspace{0.2cm}
+
+\texttt{
+\$ modprobe kvm
+}
+
+\texttt{
+\$ modprobe kvm\_intel
+}
+
+\vspace{0.2cm}
+
+La imagen con la que se instala la primera máquina virtual está en un servidor
+de la ULPGC, con lo que lo primero que hay que hacer es montar este mediante NFS,
+instalando las utilidades necesarias para usar NFS:
+
+\vspace{0.2cm}
+
+\texttt{
+\$ dnf install nfs-utils
+}
+
+\texttt{
+\$ mkdir imagenes
+}
+
+\texttt{
+\$ mount -t nfs 10.22.146.215:/imagenes imagenes
+}
+
+\vspace{0.2cm}
+
+A continuación, se usa el \texttt{virt-manager}
+para instalar la imagen de Fedora como una máqunia virtual.
+Es imprescindible usar los paquetes predefinidos ante los de la
+última version, ya que esto se ha visto a causar problemas tales que la máquina
+virtual no arranca correctamente y entra al menú GRUB.
+Una vez instalada la máqunia virtual, se pueden actualizar
+sus paquetes con \texttt{dnf} para que sean de la última versión.
+
+
+\section{Pruebas/Validación}
+
+Para comprobar que la máquina es capaz de virtualizar,
+se busca dentro de \texttt{/proc/cpuinfo} por el texto \texttt{vmx} o \texttt{svm},
+ya que estos indican que el procesador tiene flags activos para la virtualización:
+
+\vspace{0.2cm}
+
+\texttt{
+\$ grep -E "vmx|svm" /proc/cpuinfo
+}
+
+\vspace{0.2cm}
+
+Además se puede verificar que los módulos del kernel
+han sido activados mediante \texttt{lsmod}:
+
+\vspace{0.2cm}
+
+\texttt{
+\$ lsmod | grep "kvm"
+}
+
+\vspace{0.2cm}
+
+Por último, dentro de la máqunia virtual se pueden usar los
+comandos \texttt{free -h}, 
+\texttt{df -h}, \texttt{nproc} y \texttt{ping}, 
+para comprobar que la memoria RAM, el tamaño del disco virtual,
+el número de processos, y la conectividad a internet son adecuados.
+
 
 \end{document}

@@ -1,0 +1,182 @@
+\documentclass[spanish]{article}
+\usepackage{csquotes}
+\usepackage[spanish]{babel}
+\selectlanguage{spanish}
+\usepackage[utf8]{inputenc}
+\usepackage{authblk}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\usepackage[
+	backend=biber,
+	style=numeric,
+]{biblatex}
+
+\usepackage{enumitem}
+\usepackage{extarrows}
+\usepackage{mathtools}
+\usepackage{systeme}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{listingsutf8}
+
+\usepackage{multirow}
+\usepackage{minted}
+
+%\graphicspath{ {./img/} }
+
+%\addbibresource{./sources.bib}
+
+\newcommand{\cimg}[2]{
+\begin{figure}[H]
+	\center
+		\includegraphics[width=#2\linewidth]{#1}
+\end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	{\huge\bfseries Practica 2 - Operaciones de máquinas virtuales \par}
+	\vspace{1cm}
+	{\scshape\Large Aurora Zuoris \par\tt{aurora.zuoris101@alu.ulpgc.es}\par}
+	\vspace{3cm}
+	{\scshape\large Virtualización y Processamiento Distribuido\par}
+	\vspace{1cm}
+	{\scshape\large Grado en Ciencias e Ingeniería de Datos\par}
+	\vspace{1cm}
+	{\scshape\large Escuela de Ingeniería Informática\par}
+	\vspace{1cm}
+	{\scshape\large Universidad de Las Palmas de Gran Canaria\par}
+	\vspace{1cm}
+	{\scshape\large \today{} \par}
+\end{titlepage}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introducción}
+
+En este informe se describe como realizar
+varias operaciones con maquinas virtuales.
+Primero se muestra como se copia una maquina virtual a mano, ocn el fin 
+de entender que archivos son necesarios para que una maquina virtual funcione.
+luego se muestra como se copia una maquina virtual con
+las herramientas diseñadas para tal fin,
+Al final se instala una maquina virtual a partir de virt-install.
+
+\section{Desarollo}
+
+\subsubsection{Copia de una maquina virtual a mano}
+
+Una maquina virtual consiste de principalmente dos archivos,
+la configuración de la maquina virtual, y la imagen de su disco duro.
+Con lo que para realizar una copia, se debe copiar ambos archivos,
+y cambiar la configuración para que no haya conflictos.
+
+\begin{lstlisting}[language=bash,breaklines=true]
+$ cd /etc/libvirt/qemu/
+$ ls
+autostart  MinimalFedoraServer39.xml  networks
+$ cp MinimalFedoraServer39.xml HandcloneFedoraServer39.xml -v
+'MinimalFedoraServer39.xml' -> 'HandcloneFedoraServer39.xml'
+
+$ cd /var/lib/libvirt/
+$ ls
+boot  dnsmasq  filesystems  images  network  qemu  swtpm
+$ cd images/
+$ ls
+MinimalFedoraServer39.qcow2
+$ cp MinimalFedoraServer39.qcow2 HandcloneFedoraServer39.qcow2 -v
+'MinimalFedoraServer39.qcow2' -> 'HandcloneFedoraServer39.qcow2'
+\end{lstlisting}
+
+El archivo de configuración XML tiene que ser modificado para que no haya conflictos,
+en particular, el nombre de la maquina virtual, el camino
+hacia la imagen del disco duro, el UUID, y el MAC address de la tarjeta de red. 
+
+\begin{lstlisting}[language=xml,breaklines=true]
+9,10c9,10
+<   <name>HandcloneFedoraServer39</name>
+<   <uuid>5c2a13ed-6b12-4960-a8d1-fcd209f348b1</uuid>
+---
+>   <name>MinimalFedoraServer39</name>
+>   <uuid>5c2a13ed-6b12-4960-a8d1-fcd209f348b0</uuid>
+45c45
+<       <source file='/var/lib/libvirt/images/HandcloneFedoraServer39.qcow2'/>
+---
+>       <source file='/var/lib/libvirt/images/MinimalFedoraServer39.qcow2'/>
+136c136
+<       <mac address='52:54:00:70:1f:7f'/>
+---
+>       <mac address='52:54:00:70:1f:6f'/>
+\end{lstlisting}
+
+Para el UUID y el MAC address, se pueden usar herramientas que generen nuevos,
+pero lo único que importa es que sean diferentes, pues simplemente incrementar
+un digito de estos tal que sigua siendo valido es suficiente.
+
+Al final, se debe registrar estos nuevos archivos para que sean
+reconocidos por libvirt. Esto se hace con virsh define.
+
+\begin{lstlisting}[language=bash,breaklines=true]
+virsh # define /etc/libvirt/qemu/HandcloneFedoraServer39.xml 
+Domain 'HandcloneFedoraServer39' defined from /etc/libvirt/qemu/HandcloneFedoraServer39.xml
+
+virsh # list --all
+ Id   Nombre                    Estado
+-----------------------------------------
+ -    HandcloneFedoraServer39   apagado
+ -    MinimalFedoraServer39     apagado
+\end{lstlisting}
+
+
+\subsubsection{Copia de una maquina virtual con virt-manager}
+
+Hacer una copia en virt-manager consiste en simplemente
+seleccionar la maquina virtual que se quiere copiar,
+hacerle click derecho y seleccionar ``Clone".
+
+\subsubsection{Copia de una maquina virtual con virt-clone}
+
+Virt-clone es una herramienta que permite clonar maquinas virtuales.
+Para clonar una maquina virtual, se debe especificar el nombre de la maquina virtual
+original y el nombre de la maquina virtual clonada.
+
+\begin{lstlisting}[language=bash,breaklines=true]
+$ virt-clone -o MinimalFedoraServer39 --name VirtcloneFedoraServer39 --auto-clone
+Allocating 'VirtcloneFedoraServer39.qcow2'                  |    0 B  00:00 ... 
+Allocating 'VirtcloneFedor 16% [==-              ]    0 B/s | 1.7 GB  --:-- ETA 
+El clon 'VirtcloneFedoraServer39' ha sido creado exitosamente.
+\end{lstlisting}
+
+\subsubsection{Instalación de una maquina virtual con virt-install}
+
+Para installar una maquina virtual con virt-install, primero se debe montar el directorio donde se encuentran las imagenes de las maquinas virtuales.
+Entonces consiste de simplemente usar los flags necesarios para configurar la maquina virtual
+a lo deseado.
+
+\begin{lstlisting}[language=bash,breaklines=true]
+$ mount -t nfs disnas.dis.ulpgc.es:/imagenes imagenes
+Created symlink /run/systemd/system/remote-fs.target.wants/rpc-statd.service -> /usr/lib/systemd/system/rpc-statd.service.
+
+$ virt-install -n "Creacion_virt_install" --memory 2048 --vcpus 1 --disk size=10 -c imagenes/fedora/39/isos/x86_64/Fedora-Server-netinst-x86_64-39-1.5.iso -w network=default
+
+Empezando la instalacion...
+Allocating 'Creacion_virt_install.qcow2'                    |  16 MB  00:00 ... 
+Creando dominio...                                          |    0 B  00:00     
+Running graphical console command: virt-viewer --connect qemu:///system --wait Creacion_virt_install
+\end{lstlisting}
+
+\section{Pruebas/Validación}
+
+Para validar que las maquinas virtuales funcionan, se debe
+ejecutarlas a la vez y verificar que no haya conflictos
+ni en su ejecutamiento ni en su red.
+
+\end{document}
